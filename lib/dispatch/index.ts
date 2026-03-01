@@ -23,7 +23,7 @@ import { formatAttachmentsForTask } from "./attachments.js";
 import { loadRoleInstructions } from "./bootstrap-hook.js";
 import { slotName } from "../names.js";
 
-import { buildTaskMessage, buildAnnouncement, formatSessionLabel } from "./message-builder.js";
+import { buildTaskMessage, buildConflictFixMessage, buildAnnouncement, formatSessionLabel } from "./message-builder.js";
 import { ensureSessionFireAndForget, sendToAgent, shouldClearSession } from "./session.js";
 import { acknowledgeComments, EYES_EMOJI } from "./acknowledge.js";
 
@@ -161,12 +161,20 @@ export async function dispatchTask(
   } catch { /* best-effort */ }
 
   const primaryChannelId = project.channels[0]?.channelId ?? project.slug;
-  const taskMessage = buildTaskMessage({
-    projectName: project.name, channelId: primaryChannelId, role, issueId,
-    issueTitle, issueDescription, issueUrl,
-    repo: project.repo, baseBranch: project.baseBranch,
-    comments, resolvedRole, prContext, prFeedback, attachmentContext,
-  });
+  const isConflictFix = prFeedback?.reason === "merge_conflict";
+  const taskMessage = isConflictFix && prFeedback
+    ? buildConflictFixMessage({
+        projectName: project.name, channelId: primaryChannelId, role, issueId,
+        issueTitle, issueUrl,
+        repo: project.repo, baseBranch: project.baseBranch,
+        resolvedRole, prFeedback,
+      })
+    : buildTaskMessage({
+        projectName: project.name, channelId: primaryChannelId, role, issueId,
+        issueTitle, issueDescription, issueUrl,
+        repo: project.repo, baseBranch: project.baseBranch,
+        comments, resolvedRole, prContext, prFeedback, attachmentContext,
+      });
 
   // Load role-specific instructions to inject into the worker's system prompt
   const roleInstructions = await loadRoleInstructions(workspaceDir, project.name, role);

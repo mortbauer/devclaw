@@ -111,6 +111,64 @@ export function buildTaskMessage(opts: {
   return parts.join("\n");
 }
 
+/**
+ * Build a minimal conflict-fix message — no issue description, no comments.
+ * Just the PR feedback (rebase instructions) and work_finish instructions.
+ */
+export function buildConflictFixMessage(opts: {
+  projectName: string;
+  channelId: string;
+  role: string;
+  issueId: number;
+  issueTitle: string;
+  issueUrl: string;
+  repo: string;
+  baseBranch: string;
+  resolvedRole?: ResolvedRoleConfig;
+  prFeedback: PrFeedback;
+}): string {
+  const {
+    projectName, channelId, role, issueId, issueTitle,
+    issueUrl, repo, baseBranch, prFeedback,
+  } = opts;
+
+  const results = opts.resolvedRole?.completionResults ?? [];
+  const availableResults = results.map((r: string) => `"${r}"`).join(", ");
+
+  const parts = [
+    `${role.toUpperCase()} task for project "${projectName}" — Issue #${issueId}`,
+    ``,
+    `> **🔧 MERGE CONFLICT FIX — This is a focused conflict resolution task.**`,
+    `> Rebase the PR branch onto \`${baseBranch}\`, resolve conflicts, and force-push.`,
+    `> Do NOT re-implement the feature or make other changes.`,
+  ];
+
+  parts.push(...formatPrFeedback(prFeedback, baseBranch));
+
+  parts.push(
+    ``,
+    `Repo: ${repo} | Branch: ${baseBranch} | ${issueUrl}`,
+    `Project: ${projectName} | Channel: ${channelId}`,
+  );
+
+  parts.push(
+    ``, `---`, ``,
+    `## MANDATORY: Task Completion`,
+    ``,
+    `When you finish this task, you MUST call \`work_finish\` with:`,
+    `- \`role\`: "${role}"`,
+    `- \`channelId\`: "${channelId}"`,
+    `- \`result\`: ${availableResults}`,
+    `- \`summary\`: brief description of what you did`,
+    ``,
+    `⚠️ You MUST call work_finish even if you encounter errors or cannot finish.`,
+    `Use "blocked" with a summary explaining why you're stuck.`,
+    `Never end your session without calling work_finish.`,
+  );
+
+  return parts.join("\n");
+}
+
 export function buildAnnouncement(
   level: string, role: string, sessionAction: "spawn" | "send",
   issueId: number, issueTitle: string, issueUrl: string,
