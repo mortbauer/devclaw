@@ -44,7 +44,7 @@ const plugin = {
   id: "devclaw",
   name: "DevClaw",
   description:
-    "Multi-project dev/qa pipeline orchestration with GitHub/GitLab integration, developer tiers, and audit logging.",
+    "Multi-project dev/qa pipeline orchestration with GitHub/GitLab/Gitea integration, developer tiers, and audit logging.",
   configSchema: {
     type: "object",
     properties: {
